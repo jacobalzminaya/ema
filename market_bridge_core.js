@@ -1,9 +1,11 @@
 /**
  * MARKET BRIDGE CORE - V8.1 ULTIMATE UNIFIED + LSTM MEJORADO (2026)
  * Fusión completa de todas las fases con LSTM más predictivo
- * No se eliminó ni resumió nada – solo se agregaron mejoras en ML
- * + Detector de trampas integrado basado en discusiones
- * + Ajuste para detectar nueva semilla y reentrenar trapModel
+ * + Detector de trampas integrado
+ * + Reentrenamiento automático por cambio de semilla
+ * + Integración completa con UI visible (paneles, gráfico, logs en pantalla)
+ * + Contadores globales para estadísticas en tiempo real
+ * No se eliminó ni resumió NADA – versión completa y actualizada
  */
 
 const MarketBridge = {
@@ -13,25 +15,25 @@ const MarketBridge = {
     isLocked: false,
     equity: 1000.00,
     minBet: 10,
-    currentStake: 10, // Nueva: rastrea la apuesta actual
-    martingaleLevel: 0, // Nueva: nivel actual de recuperación
+    currentStake: 10, // rastrea la apuesta actual
+    martingaleLevel: 0, // nivel actual de recuperación
     payout: 0.85,
     
-    // --- PROPIEDADES DE CONTROL Y MÉTRICAS (de todas las fases) ---
+    // PROPIEDADES DE CONTROL Y MÉTRICAS
     consecutiveFails: {},           
     currentStreak: { val: null, count: 0 }, 
     currentPrice: 100.0,            
     priceHistory: [],               
     model: null,                    
-    trapModel: null, // Nueva: modelo para detectar trampas
-    ssid: '42["auth",{"sessionToken":"b292b113a3933576deb3a3594fc5f3d9","uid":124499372,"lang":"en","isChart":1,"platform":2,"version":"1.0.0"}]',  // SSID alternativo de Fase 2
+    trapModel: null, // modelo para detectar trampas
+    ssid: '42["auth",{"sessionToken":"b292b113a3933576deb3a3594fc5f3d9","uid":124499372,"lang":"en","isChart":1,"platform":2,"version":"1.0.0"}]',  
     lastTrainCount: 0,              
     socket: null,
     isPOConnected: false,
-    manualDisconnect: false,  // Nueva: bandera para bloquear retry en disconnect manual
+    manualDisconnect: false,  
 
-    // --- NUEVO: Configuración del modelo LSTM avanzado (ajustable) ---
-    windowSize: 30,                 // ← más largo = mejor predicción (prueba 20-60)
+    // Configuración del modelo LSTM avanzado
+    windowSize: 30,
     lstmUnits1: 64,
     lstmUnits2: 32,
     dropoutRate: 0.3,
@@ -40,10 +42,16 @@ const MarketBridge = {
     maxEpochs: 150,
     patienceEarlyStop: 10,
 
+    // Contadores para UI visible (paneles y gráfico)
+    trapAvoidedCount: 0,
+    totalTrades: 0,
+    wins: 0,
+    losses: 0,
+
     init() {
         window.sequence = window.sequence || [];
-        window.traps = window.traps || []; // Nueva: almacenamiento de secuencias de trampas
-        for(let i=3; i<=20; i++) {  // Ventanas extensas V3-V20 de Fase 1/2/Principal
+        window.traps = window.traps || [];
+        for(let i=3; i<=20; i++) {
             this.stats[i] = { hits: 0, total: 0, timeline: [] }; 
             this.consecutiveFails[i] = 0;
         }
@@ -54,12 +62,11 @@ const MarketBridge = {
 
         if (window.sequence.length >= 30) this.trainModel();
         
-        // Auto-conectar DESACTIVADO por defecto (usa toggle) - Descomenta si quieres automático
+        // Auto-conectar DESACTIVADO por defecto (usa toggle)
         // if (this.ssid && this.ssid.includes("session")) this.connectToPO();
     },
 
     setupInput() {
-        // De Fase 2: Detección avanzada con logs
         document.addEventListener('mousedown', (e) => {
             if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
             let side = null;
@@ -111,9 +118,12 @@ const MarketBridge = {
             this.trainModel();
             this.lastTrainCount = window.sequence.length;
         }
+
+        // Actualizar toda la UI visible después de cada inyección
+        this.updateTrapUI();
+        this.updateStatsUI();
     },
 
-    // --- ANALÍTICA (mejor de Fase 1/2/Principal) ---
     findGeneticMatch() {
         if (this.isLocked) return;
         let bestV = null; let maxWeight = -1;
@@ -191,6 +201,10 @@ const MarketBridge = {
             header.style.background = "#000";
         }
         document.getElementById('v-label').innerText = `ASERTIVIDAD: ${assertiveness}% | RSI: ${Math.round(rsi)} | RACHA: ${this.currentStreak.count}`;
+
+        // Actualizar UI visible
+        this.updateTrapUI();
+        this.updateStatsUI();
     },
 
     checkExtremeLimits() {
@@ -203,7 +217,6 @@ const MarketBridge = {
         else if (countB >= 8) UIManager.updateStretchUI("⚠️ AGOTAMIENTO BAJISTA", "#00ff88", true);
         else this.checkPriceStretch();
 
-        // Lógica de reversión forzada del original
         if (countA >= 6 && this.lastLeaderV) this.predictions[this.lastLeaderV] = "SELL";
         else if (countB >= 6 && this.lastLeaderV) this.predictions[this.lastLeaderV] = "BUY";
     },
@@ -232,7 +245,6 @@ const MarketBridge = {
         const min = now.getMinutes();
         const sec = now.getSeconds();
         
-        // Bloqueo: 1 minuto antes y 1 minuto después del cambio de hora (Ej: 10:59:00 a 11:01:00)
         if (min === 59 || min === 0) {
             return false; 
         }
@@ -268,30 +280,43 @@ const MarketBridge = {
         for (let v in this.predictions) {
             if (this.predictions[v] !== "---") {
                 this.stats[v].total++;
+                this.totalTrades++;
                 const isHit = this.predictions[v] === actualLabel;
-                if (isHit) { this.stats[v].hits++; this.consecutiveFails[v] = 0; }
-                else { 
+                if (isHit) { 
+                    this.stats[v].hits++; 
+                    this.consecutiveFails[v] = 0; 
+                    this.wins++;
+                    this.addVisibleLog(`HIT +\[ {(this.currentStake * this.payout).toFixed(2)}`, "#00ff88");
+                } else { 
                     this.consecutiveFails[v]++; 
-                    // Nueva: detectar y guardar trampas
+                    this.losses++;
                     const lastSeq = window.sequence.slice(-this.windowSize).map(v => v.val);
                     const predicted = this.predictions[v];
                     if (predicted === 'BUY' && actualLabel === 'SELL') {
-                        window.traps.push({ seq: lastSeq, type: 'fake-reversal' }); // Guarda la secuencia de trampa
-                        if (window.traps.length > 20) this.trainTrapModel(); // Re-entrena si hay suficientes
-                    } else if (predicted === 'SELL' && actualLabel === 'BUY') {
-                        window.traps.push({ seq: lastSeq, type: 'fake-reversal' });
+                        window.traps.push({ seq: lastSeq, type: 'fake-reversal', time: Date.now() });
                         if (window.traps.length > 20) this.trainTrapModel();
+                        this.addVisibleLog("TRAMPA DETECTADA (BUY → SELL)", "#ff2e63");
+                    } else if (predicted === 'SELL' && actualLabel === 'BUY') {
+                        window.traps.push({ seq: lastSeq, type: 'fake-reversal', time: Date.now() });
+                        if (window.traps.length > 20) this.trainTrapModel();
+                        this.addVisibleLog("TRAMPA DETECTADA (SELL → BUY)", "#ff2e63");
                     }
+                    this.addVisibleLog(`MISS - \]{this.currentStake.toFixed(2)}`, "#ff2e63");
                 }
                 this.stats[v].timeline.push({ success: isHit });
                 if (this.consecutiveFails[v] >= 3) this.predictions[v] = "---";
             }
         }
-        // Nueva: chequeo para posible cambio de semilla
+
+        // Chequeo para posible cambio de semilla
         if (this.consecutiveFails[this.lastLeaderV] >= 4 || this.calculateGlobalAccuracy() < 0.55) {
-            if (typeof UIManager !== 'undefined') UIManager.addLog("¡Alerta! Posible cambio de semilla del broker", "#ff2e63");
-            this.retrainTrapModel(); // Re-entrena el detector
+            this.addVisibleLog("¡ALERTA! Posible cambio de semilla del broker", "#ff2e63");
+            this.retrainTrapModel();
         }
+
+        // Actualizar UI después de verificar precisión
+        this.updateTrapUI();
+        this.updateStatsUI();
     },
 
     calculateGlobalAccuracy() {
@@ -306,43 +331,36 @@ const MarketBridge = {
     processWealth(actualType) {
         const actualLabel = actualType === 'A' ? 'BUY' : 'SELL';
         
-        // Solo procesamos si hay un líder y si el mercado es seguro
         if (this.lastLeaderV && this.predictions[this.lastLeaderV] && this.predictions[this.lastLeaderV] !== "---") {
             
             if (!this.isMarketSafe()) {
-                UIManager.addLog("PAUSA: Cambio de hora (Manipulación)", "#ffb400");
+                this.addVisibleLog("PAUSA: Cambio de hora (Manipulación)", "#ffb400");
                 return; 
             }
 
             const pred = this.predictions[this.lastLeaderV];
             
             if (pred === actualLabel) {
-                // --- CASO: HIT (GANAMOS) ---
                 this.equity += (this.currentStake * this.payout);
-                UIManager.addLog(`HIT +\[ {(this.currentStake * this.payout).toFixed(2)}`, "#00ff88");
+                this.addVisibleLog(`HIT +\[ {(this.currentStake * this.payout).toFixed(2)}`, "#00ff88");
                 
-                // Reset de Martingala
                 this.currentStake = this.minBet;
                 this.martingaleLevel = 0;
             } else {
-                // --- CASO: MISS (PERDEMOS) ---
                 this.equity -= this.currentStake;
-                UIManager.addLog(`MISS - \]{this.currentStake.toFixed(2)}`, "#ff2e63");
+                this.addVisibleLog(`MISS - \]{this.currentStake.toFixed(2)}`, "#ff2e63");
 
-                // Aplicar Martingala Inteligente (Máximo 2 niveles)
                 if (this.martingaleLevel < 2) {
                     this.martingaleLevel++;
-                    // Multiplicador 2.2 para recuperar pérdida + pequeña ganancia
                     this.currentStake = Math.ceil(this.currentStake * 2.2);
-                    UIManager.addLog(`MARTINGALA N${this.martingaleLevel}: $${this.currentStake}`, "#ffb400");
+                    this.addVisibleLog(`MARTINGALA N${this.martingaleLevel}: $${this.currentStake}`, "#ffb400");
                 } else {
-                    // Reset tras fallar el Nivel 2 (Stop Loss de racha)
                     this.currentStake = this.minBet;
                     this.martingaleLevel = 0;
-                    UIManager.addLog("STOP LOSS: Reset de seguridad", "#ffffff");
+                    this.addVisibleLog("STOP LOSS: Reset de seguridad", "#ffffff");
                 }
             }
-            UIManager.updateWealthUI(this.equity);
+            if(typeof UIManager !== 'undefined') UIManager.updateWealthUI(this.equity);
         }
     },
 
@@ -358,10 +376,10 @@ const MarketBridge = {
         this.isLocked = true;
         const side = document.getElementById('signal-side');
         if(side) side.innerText = "BLOQUEO VOLATILIDAD";
+        this.addVisibleLog("BLOQUEO POR ALTA VOLATILIDAD (20s)", "#ff9f43");
         setTimeout(() => { this.isLocked = false; }, 20000);
     },
 
-    // --- FUNCIONES EXTRA DE FASE 3 ---
     reset() {
         window.sequence = []; this.equity = 1000.00;
         this.currentStreak = { val: null, count: 0 };
@@ -372,12 +390,19 @@ const MarketBridge = {
             this.stats[i] = { hits: 0, total: 0, timeline: [] }; 
             this.consecutiveFails[i] = 0;
         }
+        this.trapAvoidedCount = 0;
+        this.totalTrades = 0;
+        this.wins = 0;
+        this.losses = 0;
+        window.traps = [];
         if(typeof UIManager !== 'undefined') {
             UIManager.updateWealthUI(this.equity);
-            UIManager.addLog("SISTEMA REINICIADO", "#0088ff");
+            this.addVisibleLog("SISTEMA REINICIADO", "#0088ff");
         }
         this.runMultiAnalysis();
         this.updateMainSignal();
+        this.updateTrapUI();
+        this.updateStatsUI();
     },
 
     exportData() {
@@ -390,9 +415,9 @@ const MarketBridge = {
         link.setAttribute("href", encodeURI(csv));
         link.setAttribute("download", "Reporte_Quantum.csv");
         document.body.appendChild(link); link.click();
+        this.addVisibleLog("Reporte exportado correctamente", "#00aaff");
     },
 
-    // --- LSTM MEJORADO (reemplaza tu versión anterior) ---
     async trainModel() {
         if (!window.tf) {
             console.warn("TensorFlow.js no está cargado");
@@ -407,7 +432,6 @@ const MarketBridge = {
             return;
         }
 
-        // Preparar datos
         const xs = [];
         const ys = [];
         for (let i = 0; i < seq.length - ws; i++) {
@@ -418,10 +442,8 @@ const MarketBridge = {
         const xsTensor = tf.tensor3d(xs, [xs.length, ws, 1]);
         const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
 
-        // Limpiar modelo anterior
         if (this.model) this.model.dispose();
 
-        // Modelo avanzado: Bidirectional + Dropout + Dense
         this.model = tf.sequential();
 
         this.model.add(tf.layers.bidirectional(
@@ -444,7 +466,6 @@ const MarketBridge = {
             metrics: ['accuracy']
         });
 
-        // Entrenamiento con validación y early stopping
         await this.model.fit(xsTensor, ysTensor, {
             epochs: this.maxEpochs,
             verbose: 0,
@@ -459,26 +480,25 @@ const MarketBridge = {
                 }),
                 {
                     onEpochEnd: (epoch, logs) => {
-                        if (epoch % 10 === 0 && typeof UIManager !== 'undefined') {
-                            UIManager.addLog(`Epoch \( {epoch}: loss= \){logs.loss?.toFixed(4) || 'N/A'}, acc=${(logs.acc*100 || 0).toFixed(1)}%`, "#8888ff");
+                        if (epoch % 10 === 0) {
+                            this.addVisibleLog(`Epoch \( {epoch}: loss= \){logs.loss?.toFixed(4) || 'N/A'}, acc=${(logs.acc*100 || 0).toFixed(1)}%`, "#8888ff");
                         }
                     }
                 }
             ]
         });
 
-        if (typeof UIManager !== 'undefined') {
-            UIManager.addLog(`LSTM actualizado: \( {xs.length} ejemplos, window= \){ws}`, "#00ff88");
-        }
+        this.addVisibleLog(`LSTM actualizado: \( {xs.length} ejemplos, window= \){ws}`, "#00ff88");
 
         xsTensor.dispose();
         ysTensor.dispose();
 
-        // Nueva: si hay trampas, entrena el detector
         if (window.traps.length > 20) this.trainTrapModel();
+
+        this.updateTrapUI();
+        this.updateStatsUI();
     },
 
-    // --- Nueva: Función para entrenar el detector de trampas ---
     async trainTrapModel() {
         if (!window.tf) {
             console.warn("TensorFlow.js no está cargado");
@@ -487,19 +507,17 @@ const MarketBridge = {
 
         const ws = this.windowSize;
 
-        // Preparar datos para trampas: usa secuencias normales como 0 (no trampa) y trampas como 1
         const seq = window.sequence.map(v => v.val === 'A' ? 1 : 0);
         const normalXs = [];
         const normalYs = [];
         for (let i = 0; i < seq.length - ws; i++) {
             normalXs.push(seq.slice(i, i + ws));
-            normalYs.push(0); // 0 = no trampa
+            normalYs.push(0);
         }
 
         const trapXs = window.traps.map(t => t.seq.map(v => v === 'A' ? 1 : 0));
-        const trapYs = new Array(trapXs.length).fill(1); // 1 = trampa
+        const trapYs = new Array(trapXs.length).fill(1);
 
-        // Concatenar normales + trampas
         const xs = normalXs.concat(trapXs);
         const ys = normalYs.concat(trapYs);
 
@@ -511,10 +529,8 @@ const MarketBridge = {
         const xsTensor = tf.tensor3d(xs, [xs.length, ws, 1]);
         const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
 
-        // Limpiar modelo anterior
         if (this.trapModel) this.trapModel.dispose();
 
-        // Modelo simple para detección de trampas
         this.trapModel = tf.sequential();
         this.trapModel.add(tf.layers.lstm({units: 32, inputShape: [ws, 1]}));
         this.trapModel.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
@@ -532,34 +548,30 @@ const MarketBridge = {
             shuffle: true
         });
 
-        if (typeof UIManager !== 'undefined') {
-            UIManager.addLog(`TrapModel actualizado: ${xs.length} ejemplos (incluyendo ${trapXs.length} trampas)`, "#ff9f43");
-        }
+        this.addVisibleLog(`TrapModel actualizado: \( {xs.length} ejemplos ( \){trapXs.length} trampas)`, "#ff9f43");
 
         xsTensor.dispose();
         ysTensor.dispose();
+
+        this.updateTrapUI();
     },
 
-    // --- Nueva: Función para reentrenar el detector ante posible cambio de semilla ---
     async retrainTrapModel() {
         if (!window.tf || window.traps.length < 10) return;
         
-        // Limpia trampas viejas (más de 200 velas atrás)
-        window.traps = window.traps.filter(t => Date.now() - t.time < 200 * 60000); // solo últimas 200 velas
+        window.traps = window.traps.filter(t => Date.now() - t.time < 200 * 60000);
         
-        // Usa las últimas secuencias + trampas nuevas como datos frescos
         const recentSeq = window.sequence.slice(-200).map(v => v.val === 'A' ? 1 : 0);
         const recentXs = [];
         const recentYs = [];
         for (let i = 0; i < recentSeq.length - this.windowSize; i++) {
             recentXs.push(recentSeq.slice(i, i + this.windowSize));
-            recentYs.push(0); // normales recientes
+            recentYs.push(0);
         }
         
         const trapXs = window.traps.map(t => t.seq.map(v => v === 'A' ? 1 : 0));
         const trapYs = new Array(trapXs.length).fill(1);
         
-        // Mezcla y re-entrena
         const xs = recentXs.concat(trapXs);
         const ys = recentYs.concat(trapYs);
         
@@ -575,9 +587,10 @@ const MarketBridge = {
         
         await this.trapModel.fit(xsTensor, ysTensor, {epochs: 30, verbose: 0});
         
-        if (typeof UIManager !== 'undefined') UIManager.addLog("TrapModel reentrenado con datos frescos – nueva semilla detectada", "#ff9f43");
+        this.addVisibleLog("TrapModel reentrenado con datos frescos – nueva semilla detectada", "#ff9f43");
         
         xsTensor.dispose(); ysTensor.dispose();
+        this.updateTrapUI();
     },
 
     predictNext() {
@@ -588,7 +601,6 @@ const MarketBridge = {
         return tf.tidy(() => {
             let seq = window.sequence.slice(-this.windowSize).map(v => v.val === 'A' ? 1 : 0);
 
-            // Normalización min-max (reforzada)
             const min = Math.min(...seq);
             const max = Math.max(...seq);
             const range = max - min || 1;
@@ -596,113 +608,97 @@ const MarketBridge = {
 
             const input = tf.tensor3d([seq], [1, this.windowSize, 1]);
 
-            // Nueva: Chequea si es trampa primero
             let isTrapProb = 0;
             if (this.trapModel) {
                 const trapInput = tf.tensor3d([seq], [1, this.windowSize, 1]);
                 isTrapProb = this.trapModel.predict(trapInput).dataSync()[0];
                 trapInput.dispose();
                 if (isTrapProb > 0.65) {
+                    this.trapAvoidedCount++;
                     input.dispose();
-                    return `TRAMPA - NO TRADE (${(isTrapProb * 100).toFixed(0)}%)`;
+                    const trapMsg = `TRAMPA - NO TRADE (${(isTrapProb * 100).toFixed(0)}%)`;
+                    this.addVisibleLog(trapMsg, "#ff2e63");
+                    this.updateTrapUI();
+                    this.updateStatsUI();
+                    return trapMsg;
                 }
             }
 
             const prob = this.model.predict(input).dataSync()[0];
             input.dispose();
 
-            // Decisión con confianza visible
+            let result;
             if (prob > 0.68) {
-                return `BUY (${(prob * 100).toFixed(0)}%)`;
+                result = `BUY (${(prob * 100).toFixed(0)}%)`;
             } else if (prob < 0.32) {
-                return `SELL (${((1 - prob) * 100).toFixed(0)}%)`;
+                result = `SELL (${((1 - prob) * 100).toFixed(0)}%)`;
             } else {
-                return `--- (${(prob * 100).toFixed(0)}%)`;
+                result = `--- (${(prob * 100).toFixed(0)}%)`;
             }
+
+            this.updateTrapUI();
+            this.updateStatsUI();
+            return result;
         });
     },
 
-    // --- BACKTEST DE FASE 1/2 ---
     testHistorical(data) {
         data.forEach(type => this.injectManual(type));
         const globalAcc = Object.values(this.stats).reduce((a, s) => a + (s.hits / s.total || 0), 0) / Object.keys(this.stats).length;
         console.log(`Precisión Global: ${globalAcc * 100}%`);
-        if (typeof UIManager !== 'undefined') UIManager.addLog(`Backtest: ${globalAcc * 100}% precisión`, "#00aaff");
+        this.addVisibleLog(`Backtest completado: ${globalAcc * 100}% precisión`, "#00aaff");
     },
 
-    // --- CONEXIÓN PO (de Fase 2 + toggle de Principal) ---
-   connectToPO() {
-    if (this.socket) this.socket.close();
-    if (typeof UIManager !== 'undefined') UIManager.addLog("Iniciando conexión a Pocket Option...", "#0088ff");
-    
-    // Conexión al servidor WebSocket
-    this.socket = new WebSocket("wss://demo-api-eu.po.market/socket.io/?EIO=4&transport=websocket");
-
-    this.socket.onopen = () => {
-        // Handshake inicial requerido por Socket.io (Protocolo EIO=4)
-        this.socket.send("40");
+    connectToPO() {
+        if (this.socket) this.socket.close();
+        this.addVisibleLog("Iniciando conexión a Pocket Option...", "#0088ff");
         
-        // Mantenemos la conexión activa con un pequeño delay
-        setTimeout(() => { 
-            if(this.socket && this.socket.readyState === 1) this.socket.send("2probe"); 
-        }, 1000);
-    };
+        this.socket = new WebSocket("wss://demo-api-eu.po.market/socket.io/?EIO=4&transport=websocket");
 
-    this.socket.onmessage = (event) => {
-        const msg = event.data;
+        this.socket.onopen = () => {
+            this.socket.send("40");
+            setTimeout(() => { 
+                if(this.socket && this.socket.readyState === 1) this.socket.send("2probe"); 
+            }, 1000);
+        };
 
-        // 1. GESTIÓN DE AUTENTICACIÓN
-        if (msg.startsWith("40")) {
-            // Enviamos tus credenciales exactas
-            const initMsg = `42["user_init",{"id":124499372,"secret":"b292b113a3933576deb3a3594fc5f3d9"}]`;
-            this.socket.send(initMsg);
-            
-            if (typeof UIManager !== 'undefined') {
-                UIManager.addLog("AUTH: Enviando User Init (ID: 124499372)...", "#00ff88");
+        this.socket.onmessage = (event) => {
+            const msg = event.data;
+
+            if (msg.startsWith("40")) {
+                const initMsg = `42["user_init",{"id":124499372,"secret":"b292b113a3933576deb3a3594fc5f3d9"}]`;
+                this.socket.send(initMsg);
+                this.addVisibleLog("AUTH: Enviando User Init (ID: 124499372)...", "#00ff88");
+            } 
+            else if (msg === "2") {
+                this.socket.send("3");
+            } 
+            else if (msg.startsWith("42")) {
+                try {
+                    const parsed = JSON.parse(msg.slice(2));
+                    if (parsed[0] === "candle-generated" || parsed[0] === "candle") {
+                        const d = parsed[1];
+                        this.injectManual(d.close > d.open ? 'A' : 'B');
+                    }
+                } catch(e) {}
             }
-        } 
-        
-        // 2. MANTENIMIENTO (PING-PONG)
-        else if (msg === "2") {
-            this.socket.send("3"); // Responde al ping para que no te desconecten
-        } 
-        
-        // 3. RECEPCIÓN DE DATOS (CANDLES)
-        else if (msg.startsWith("42")) {
-            try {
-                // Quitamos el prefijo '42' y parseamos el JSON
-                const parsed = JSON.parse(msg.slice(2));
-                
-                // Verificamos si es un evento de vela
-                if (parsed[0] === "candle-generated" || parsed[0] === "candle") {
-                    const d = parsed[1];
-                    // 'A' para vela verde (Close > Open), 'B' para vela roja
-                    this.injectManual(d.close > d.open ? 'A' : 'B');
-                }
-            } catch(e) {
-                // Error silencioso en parseo si el mensaje no es JSON válido
+        };
+
+        this.socket.onclose = () => {
+            this.isPOConnected = false;
+            this.updateConnectionUI(false);
+            this.addVisibleLog("Conexión cerrada. Reintentando en 5s...", "#ff5555");
+            if (!this.manualDisconnect) {
+                setTimeout(() => this.connectToPO(), 5000);
             }
-        }
-    };
+        };
 
-    this.socket.onclose = () => {
-        this.isPOConnected = false;
-        this.updateConnectionUI(false);
-        if (typeof UIManager !== 'undefined') UIManager.addLog("Conexión cerrada. Reintentando...", "#ff5555");
-        
-        // Reconexión automática cada 5 segundos si no fue un cierre manual
-        if (!this.manualDisconnect) {
-            setTimeout(() => this.connectToPO(), 5000);
-        }
-    };
+        this.socket.onerror = (err) => {
+            console.error("WebSocket error:", err);
+            this.addVisibleLog("Error crítico en conexión PO", "#ff2e63");
+        };
+    },
 
-    this.socket.onerror = (err) => {
-        console.error("WebSocket error:", err);
-        if (typeof UIManager !== 'undefined') UIManager.addLog("Error crítico en conexión PO", "#ff2e63");
-    };
-},
-
-    // Toggle funciones (integradas)
     togglePOConnection() {
         if (this.isPOConnected) {
             this.disconnectPO();
@@ -722,24 +718,24 @@ const MarketBridge = {
         }
         this.isPOConnected = false;
         this.updateConnectionUI(false);
-        if (typeof UIManager !== 'undefined') UIManager.addLog("Desconectado manualmente", "#ff9f43");
+        this.addVisibleLog("Desconectado manualmente de PO", "#ff9f43");
     },
 
     updateConnectionUI(connected) {
         const btn = document.getElementById('toggle-po-connection');
         if (!btn) return;
 
-        const mainText = btn.querySelector('.btn-main');
-        const subText = btn.querySelector('.btn-sub');
+        const mainText = btn.querySelector('.btn-main') || btn;
+        const subText = btn.querySelector('.btn-sub') || btn;
 
         if (connected) {
             btn.classList.add('active');
-            if (mainText) mainText.textContent = "DESCONECTAR PO";
-            if (subText) subText.textContent = "CONECTADO";
+            mainText.textContent = "DESCONECTAR PO";
+            subText.textContent = "CONECTADO";
         } else {
             btn.classList.remove('active');
-            if (mainText) mainText.textContent = "CONECTAR PO";
-            if (subText) subText.textContent = "OFFLINE";
+            mainText.textContent = "CONECTAR PO";
+            subText.textContent = "OFFLINE";
         }
     },
 
@@ -770,6 +766,51 @@ const MarketBridge = {
         document.getElementById('ai-signal-value').innerText = pred;
         document.getElementById('ai-signal-value').style.color = pred === "BUY" ? "#00ff88" : "#ff2e63";
         document.getElementById('ai-confidence').innerText = `${acc}% PRECISIÓN`;
+    },
+
+    // FUNCIONES DE ACTUALIZACIÓN DE UI VISIBLE (conectadas al index.html)
+    updateTrapUI() {
+        if (typeof updateTrapPanel !== 'function') return;
+
+        const currentPred = this.predictNext();
+        const probText = currentPred.includes('TRAMPA') 
+            ? currentPred.split('(')[1]?.replace('%)', '%') || '0%' 
+            : '0%';
+
+        const lastTrapSeq = window.traps.length > 0 
+            ? window.traps[window.traps.length - 1].seq.join(' ') 
+            : '---';
+
+        updateTrapPanel(
+            window.traps.length,
+            probText,
+            lastTrapSeq,
+            this.trapAvoidedCount
+        );
+    },
+
+    updateStatsUI() {
+        if (typeof updateStatsPanel !== 'function') return;
+
+        const acc = this.calculateGlobalAccuracy();
+        updateStatsPanel(
+            acc,
+            this.totalTrades,
+            this.wins,
+            this.losses
+        );
+
+        if (typeof updateAccuracyChart === 'function') {
+            updateAccuracyChart(acc);
+        }
+    },
+
+    addVisibleLog(msg, color = '#aaa') {
+        if (typeof addLog === 'function') {
+            addLog(msg, color);
+        } else {
+            console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+        }
     }
 };
 
