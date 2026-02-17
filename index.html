@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>QUANTUM MACRO | MASTER CONFLUENCE V5.5</title>
+    <style>
+                html, body {
+            /* Evita que el navegador espere un segundo toque */
+            touch-action: manipulation; 
+            /* Evita la selección de texto accidental al tocar rápido */
+            -webkit-user-select: none;
+            user-select: none;
+            /* Evita el scroll elástico que marea en móvil */
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Optimización para que los botones respondan instantáneo */
+        button, .window-card {
+            touch-action: manipulation;
+        }
+        :root { 
+            --n-green: #00ff88; 
+            --n-orange: #ff9f43; 
+            --n-red: #ff2e63; 
+            --n-blue: #00d2ff; 
+            --n-gold: #ffeb3b; 
+            --bg: #020305;
+            --card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html { 
+            margin: 0; padding: 0; 
+            background: var(--bg); 
+            height: 100%; 
+            font-family: 'Inter', -apple-system, 'Courier New', monospace; 
+            color: white; 
+            overflow: hidden; 
+        }
+
+        #layout-wrapper { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            padding-bottom: 80px;
+            box-sizing: border-box;
+        }
+
+        #header-signal { 
+            background: #000; 
+            padding: 20px; 
+            border-bottom: 1px solid var(--border); 
+            text-align: center; 
+            position: relative; 
+        }
+
+        #signal-side { 
+            font-size: 32px; 
+            font-weight: 900; 
+            margin: 0; 
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2); 
+        }
+
+        #wealth-monitor { 
+            position: absolute; 
+            top: 10px; left: 15px; 
+            text-align: left; 
+        }
+
+        #equity-value { 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: var(--n-green); 
+        }
+
+        #wealth-log { 
+            font-size: 9px; 
+            height: 30px; 
+            color: #666; 
+            margin-top: 4px; 
+            border-left: 2px solid #333; 
+            padding-left: 8px; 
+            overflow: hidden;
+        }
+
+        #ai-genetic-container {
+            background: linear-gradient(90deg, rgba(0,210,255,0.12) 0%, rgba(157,80,187,0.06) 100%);
+            border: 1px solid var(--n-blue); 
+            margin: 10px; padding: 12px; 
+            border-radius: 8px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        #confluence-bar { 
+            margin: 5px 0; 
+            display: flex; 
+            justify-content: center; 
+            gap: 10px; 
+        }
+
+        .conf-pill { 
+            font-size: 11px; 
+            font-weight: bold; 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+        }
+
+        #macro-grid {
+            flex-grow: 1; 
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px; 
+            padding: 10px; 
+            background: radial-gradient(circle at center, #0a1018 0%, #020305 100%);
+            overflow-y: auto;
+        }
+
+        .macro-col {
+            background: var(--card); 
+            border-radius: 6px; 
+            padding: 10px;
+            border: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px;
+        }
+
+        .col-label { 
+            font-size: 10px; 
+            font-weight: bold; 
+            text-align: center; 
+            color: var(--n-blue);
+            border-bottom: 1px solid #333; 
+            padding-bottom: 5px; 
+        }
+
+        .window-card { 
+            background: rgba(0,0,0,0.4); 
+            border: 1px solid var(--border); 
+            padding: 8px; 
+            border-radius: 4px; 
+        }
+
+        #dna-footer { 
+            background: #000; 
+            padding: 10px; 
+            border-top: 1px solid var(--border); 
+        }
+
+        #visual-dna-track { 
+            display: flex; justify-content: center; gap: 4px; 
+        }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; opacity: 0.8; }
+
+        #mobile-controls {
+            display: flex; 
+            gap: 12px; 
+            padding: 15px; 
+            background: rgba(5, 5, 5, 0.95); 
+            position: fixed; 
+            bottom: 0; left: 0; width: 100%; 
+            box-sizing: border-box; 
+            backdrop-filter: blur(15px);
+            border-top: 1px solid #222;
+            z-index: 100;
+        }
+
+        .btn-m {
+            flex: 1; 
+            height: 60px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 800; 
+            font-size: 16px; 
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: transform 0.1s;
+        }
+
+        .btn-m:active { transform: scale(0.96); }
+        .buy { background: var(--n-green); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3); }
+        .sell { background: var(--n-red); color: #fff; box-shadow: 0 4px 15px rgba(255, 46, 99, 0.3); }
+
+        .quantum-controls {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: linear-gradient(to top, #000, #050505);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .control-card {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-card.connect { border-left: 3px solid #00d2ff; }
+        .control-card.connect.active { 
+            border-left: 3px solid #00ff88; 
+            background: rgba(0, 255, 136, 0.08);
+            box-shadow: 0 0 18px rgba(0, 255, 136, 0.35);
+        }
+
+        .control-card.reset { border-left: 3px solid #888; }
+        .control-card.export { border-left: 3px solid var(--n-blue); }
+        .control-card.reload { border-left: 3px solid var(--n-red); }
+
+        .btn-icon {
+            font-size: 18px;
+            opacity: 0.7;
+            transition: 0.3s;
+        }
+
+        .btn-texts {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .btn-main {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .btn-sub {
+            font-size: 7px;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .control-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .control-card.connect:hover {
+            background: rgba(0, 210, 255, 0.12);
+        }
+
+        .control-card.export:hover {
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            border-color: var(--n-blue);
+        }
+
+        .control-card.reload:hover {
+            box-shadow: 0 0 15px rgba(255, 46, 99, 0.2);
+            border-color: var(--n-red);
+        }
+
+        .control-card:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .control-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: translateX(-100%);
+            transition: 0.5s;
+        }
+
+        .control-card:hover::after {
+            transform: translateX(100%);
+        }
+
+        @media (max-width: 768px) {
+            #macro-grid { grid-template-columns: 1fr; }
+            #wealth-monitor { position: static; margin-bottom: 10px; text-align: center; }
+            #wealth-log { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="layout-wrapper">
+        <div id="header-signal">
+            <div id="wealth-monitor">
+                <div id="equity-value">$1000.00</div>
+                <div id="wealth-log">SISTEMA INICIADO...</div>
+            </div>
+            <div id="signal-side" style="color: #444;">ESPERANDO ADN</div>
+            <div id="stretch-warning">ANALIZANDO LÍMITES...</div>
+            <div id="confluence-bar">
+                <div id="conf-buy" class="conf-pill" style="color: var(--n-green);">BUY: 0</div>
+                <div id="v-label">CONFLUENCIA: 0%</div>
+                <div id="conf-sell" class="conf-pill" style="color: var(--n-red);">SELL: 0</div>
+            </div>
+        </div>
+
+        <div id="ai-genetic-container">
+            <div>
+                <div style="font-size: 9px; color: var(--n-blue); font-weight: bold;">IA GENETIC PREDICTOR</div>
+                <div id="ai-best-match" style="font-size: 12px; color: #fff; margin-top: 2px;">BUSCANDO PATRÓN LÍDER...</div>
+                <div id="ai-next-move">PROYECCIÓN: ---</div>
+            </div>
+            <div style="text-align: right;">
+                <div id="ai-signal-value" style="font-size: 22px; font-weight: 900; color: #444;">WAIT</div>
+                <div id="ai-confidence" style="font-size: 9px; color: #666;">0% MATCH</div>
+            </div>
+        </div>
+
+        <div id="macro-grid">
+            <div class="macro-col">
+                <div class="col-label" style="color: #888;">BASE (50-65%)</div>
+                <div id="col-low"></div>
+            </div>
+            <div class="macro-col">
+                <div class="col-label" style="color: var(--n-green);">FUERTE (66-84%)</div>
+                <div id="col-mid"></div>
+            </div>
+            <div class="macro-col">
+                <div class="col-label" style="color: var(--n-orange);">ELITE (85-100%)</div>
+                <div id="col-high"></div>
+            </div>
+        </div>
+
+        <div id="dna-footer">
+            <div id="visual-dna-track"></div>
+        </div>
+
+        <div id="bottom-controls" class="quantum-controls">
+            <button onclick="MarketBridge.reset();" class="control-card reset">
+                <span class="btn-icon">🔄</span>
+                <div class="btn-texts">
+                    <span class="btn-main">RESET ADN</span>
+                    <span class="btn-sub">PURGE MEMORY</span>
+                </div>
+            </button>
+
+            <button onclick="MarketBridge.exportData();" class="control-card export">
+                <span class="btn-icon">📊</span>
+                <div class="btn-texts">
+                    <span class="btn-main">EXPORTAR</span>
+                    <span class="btn-sub">DATA SHEET</span>
+                </div>
+            </button>
+
+            <button id="toggle-po-connection" class="control-card connect" onclick="MarketBridge.togglePOConnection()">
+                <span class="btn-icon">🌐</span>
+                <div class="btn-texts">
+                    <span class="btn-main" id="po-btn-main">CONECTAR PO</span>
+                    <span class="btn-sub" id="po-btn-sub">OFFLINE</span>
+                </div>
+            </button>
+
+            <button onclick="location.reload()" class="control-card reload">
+                <span class="btn-icon">⚡</span>
+                <div class="btn-texts">
+                    <span class="btn-main">RELOAD</span>
+                    <span class="btn-sub">FULL REBOOT</span>
+                </div>
+            </button>
+        </div>
+
+        <div id="mobile-controls">
+            <button class="btn-m buy" onclick="MarketBridge.injectManual('A')">COMPRA (A)</button>
+            <button class="btn-m sell" onclick="MarketBridge.injectManual('B')">VENTA (B)</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@tensorflow/tfjs@4.22.0/dist/tf.min.js" crossorigin="anonymous"></script>
+    <script src="market_bridge_core.js"></script>
+    <script src="ui_manager.js"></script>
+</body>
+</html>

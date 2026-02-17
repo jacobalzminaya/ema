@@ -1,0 +1,275 @@
+        /* 1. VARIABLES Y CONFIGURACIÓN BASE */
+        :root { 
+            --n-green: #00ff88; 
+            --n-orange: #ff9f43; 
+            --n-red: #ff2e63; 
+            --n-blue: #00d2ff; 
+            --n-gold: #ffeb3b; 
+            --bg: #020305;
+            --card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html { 
+            margin: 0; padding: 0; 
+            background: var(--bg); 
+            height: 100%; 
+            font-family: 'Inter', -apple-system, 'Courier New', monospace; 
+            color: white; 
+            overflow: hidden; 
+        }
+
+        #layout-wrapper { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            padding-bottom: 80px; /* Espacio para controles inferiores */
+            box-sizing: border-box;
+        }
+
+        /* 2. HEADER: SEÑAL Y MONITOR DE RIQUEZA */
+        #header-signal { 
+            background: #000; 
+            padding: 20px; 
+            border-bottom: 1px solid var(--border); 
+            text-align: center; 
+            position: relative; 
+        }
+
+        #signal-side { 
+            font-size: 32px; 
+            font-weight: 900; 
+            margin: 0; 
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2); 
+        }
+
+        #wealth-monitor { 
+            position: absolute; 
+            top: 10px; left: 15px; 
+            text-align: left; 
+        }
+
+        #equity-value { 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: var(--n-green); 
+        }
+
+        #wealth-log { 
+            font-size: 9px; 
+            height: 30px; 
+            color: #666; 
+            margin-top: 4px; 
+            border-left: 2px solid #333; 
+            padding-left: 8px; 
+            overflow: hidden;
+        }
+
+        /* 3. COMPONENTES DE IA Y CONFLUENCIA */
+        #ai-genetic-container {
+            background: linear-gradient(90deg, rgba(0,210,255,0.12) 0%, rgba(157,80,187,0.06) 100%);
+            border: 1px solid var(--n-blue); 
+            margin: 10px; padding: 12px; 
+            border-radius: 8px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        #confluence-bar { 
+            margin: 5px 0; 
+            display: flex; 
+            justify-content: center; 
+            gap: 10px; 
+        }
+
+        .conf-pill { 
+            font-size: 11px; 
+            font-weight: bold; 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+        }
+
+        /* 4. GRID PRINCIPAL (MACRO WINDOWS) */
+        #macro-grid {
+            flex-grow: 1; 
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px; 
+            padding: 10px; 
+            background: radial-gradient(circle at center, #0a1018 0%, #020305 100%);
+            overflow-y: auto;
+        }
+
+        .macro-col {
+            background: var(--card); 
+            border-radius: 6px; 
+            padding: 10px;
+            border: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px;
+        }
+
+        .col-label { 
+            font-size: 10px; 
+            font-weight: bold; 
+            text-align: center; 
+            color: var(--n-blue);
+            border-bottom: 1px solid #333; 
+            padding-bottom: 5px; 
+        }
+
+        .window-card { 
+            background: rgba(0,0,0,0.4); 
+            border: 1px solid var(--border); 
+            padding: 8px; 
+            border-radius: 4px; 
+        }
+
+        /* 5. FOOTER ADN Y CONTROLES MÓVILES */
+        #dna-footer { 
+            background: #000; 
+            padding: 10px; 
+            border-top: 1px solid var(--border); 
+        }
+
+        #visual-dna-track { 
+            display: flex; justify-content: center; gap: 4px; 
+        }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; opacity: 0.8; }
+
+        #mobile-controls {
+            display: flex; 
+            gap: 12px; 
+            padding: 15px; 
+            background: rgba(5, 5, 5, 0.95); 
+            position: fixed; 
+            bottom: 0; left: 0; width: 100%; 
+            box-sizing: border-box; 
+            backdrop-filter: blur(15px);
+            border-top: 1px solid #222;
+            z-index: 100;
+        }
+
+        .btn-m {
+            flex: 1; 
+            height: 60px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 800; 
+            font-size: 16px; 
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: transform 0.1s;
+        }
+
+        .btn-m:active { transform: scale(0.96); }
+        .buy { background: var(--n-green); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3); }
+        .sell { background: var(--n-red); color: #fff; box-shadow: 0 4px 15px rgba(255, 46, 99, 0.3); }
+
+        /* ANIMACIONES */
+        @keyframes pulse-warn { 
+            0%, 100% { opacity: 1; } 50% { opacity: 0.5; } 
+        }
+
+        /* MEDIA QUERIES PARA MÓVIL */
+        @media (max-width: 768px) {
+            #macro-grid { grid-template-columns: 1fr; }
+            #wealth-monitor { position: static; margin-bottom: 10px; text-align: center; }
+            #wealth-log { display: none; }
+        }
+
+        .quantum-controls {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: linear-gradient(to top, #000, #050505);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .control-card {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Efectos por tipo de botón */
+        .control-card.reset { border-left: 3px solid #888; }
+        .control-card.export { border-left: 3px solid var(--n-blue); }
+        .control-card.reload { border-left: 3px solid var(--n-red); }
+
+        .btn-icon {
+            font-size: 18px;
+            opacity: 0.7;
+            transition: 0.3s;
+        }
+
+        .btn-texts {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .btn-main {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .btn-sub {
+            font-size: 7px;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Hover Effects */
+        .control-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .control-card.export:hover {
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            border-color: var(--n-blue);
+        }
+
+        .control-card.reload:hover {
+            box-shadow: 0 0 15px rgba(255, 46, 99, 0.2);
+            border-color: var(--n-red);
+        }
+
+        .control-card:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Glow interno sutil */
+        .control-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: translateX(-100%);
+            transition: 0.5s;
+        }
+
+        .control-card:hover::after {
+            transform: translateX(100%);
+        }
