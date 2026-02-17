@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Macro V5.5 - Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QUANTUM MACRO | MASTER CONFLUENCE V5.5</title>
     <style>
-               :root { 
+        :root { 
             --n-green: #00ff88; 
             --n-orange: #ff9f43; 
             --n-red: #ff2e63; 
@@ -280,44 +280,95 @@
     </style>
 </head>
 <body>
-    <div id="header-signal">
-        <h1 id="signal-side">ESPERANDO ADN</h1>
-        <div id="v-label">CONFLUENCIA: 0%</div>
-    </div>
-    
-    <div id="stretch-warning" style="text-align:center; padding:10px; font-weight:bold;">FLUJO: ESTABLE</div>
-    
-    <div id="equity-display">
-        <span id="equity-value">$1000.00</span>
-        <div id="wealth-log" style="font-size:0.8rem; color:#888; height:40px; overflow:hidden;"></div>
+
+    <div id="layout-wrapper">
+        <div id="header-signal">
+            <div id="wealth-monitor">
+                <div id="equity-value">$1000.00</div>
+                <div id="wealth-log">SISTEMA INICIADO...</div>
+            </div>
+            <div id="signal-side" style="color: #444;">ESPERANDO ADN</div>
+            <div id="stretch-warning">ANALIZANDO LÍMITES...</div>
+            <div id="confluence-bar">
+                <div id="conf-buy" class="conf-pill" style="color: var(--n-green);">BUY: 0</div>
+                <div id="v-label">CONFLUENCIA: 0%</div>
+                <div id="conf-sell" class="conf-pill" style="color: var(--n-red);">SELL: 0</div>
+            </div>
+        </div>
+
+        <div id="ai-genetic-container">
+            <div>
+                <div style="font-size: 9px; color: var(--n-blue); font-weight: bold;">IA GENETIC PREDICTOR</div>
+                <div id="ai-best-match" style="font-size: 12px; color: #fff; margin-top: 2px;">BUSCANDO PATRÓN LÍDER...</div>
+                <div id="ai-next-move">PROYECCIÓN: ---</div>
+            </div>
+            <div style="text-align: right;">
+                <div id="ai-signal-value" style="font-size: 22px; font-weight: 900; color: #444;">WAIT</div>
+                <div id="ai-confidence" style="font-size: 9px; color: #666;">0% MATCH</div>
+            </div>
+        </div>
+
+        <div id="macro-grid">
+            <div class="macro-col">
+                <div class="col-label" style="color: #888;">BASE (50-65%)</div>
+                <div id="col-low"></div>
+            </div>
+            <div class="macro-col">
+                <div class="col-label" style="color: var(--n-green);">FUERTE (66-84%)</div>
+                <div id="col-mid"></div>
+            </div>
+            <div class="macro-col">
+                <div class="col-label" style="color: var(--n-orange);">ELITE (85-100%)</div>
+                <div id="col-high"></div>
+            </div>
+        </div>
+
+        <div id="dna-footer">
+            <div id="visual-dna-track"></div>
+        </div>
+
+        <div id="bottom-controls" class="quantum-controls">
+            <button onclick="MarketBridge.reset();" class="control-card reset">
+                <span class="btn-icon">🔄</span>
+                <div class="btn-texts">
+                    <span class="btn-main">RESET ADN</span>
+                    <span class="btn-sub">PURGE MEMORY</span>
+                </div>
+            </button>
+
+            <button onclick="MarketBridge.exportData();" class="control-card export">
+                <span class="btn-icon">📊</span>
+                <div class="btn-texts">
+                    <span class="btn-main">EXPORTAR</span>
+                    <span class="btn-sub">DATA SHEET</span>
+                </div>
+            </button>
+
+            <button id="toggle-po-connection" class="control-card connect" onclick="MarketBridge.togglePOConnection()">
+                <span class="btn-icon">🌐</span>
+                <div class="btn-texts">
+                    <span class="btn-main" id="po-btn-main">CONECTAR PO</span>
+                    <span class="btn-sub" id="po-btn-sub">OFFLINE</span>
+                </div>
+            </button>
+
+            <button onclick="location.reload()" class="control-card reload">
+                <span class="btn-icon">⚡</span>
+                <div class="btn-texts">
+                    <span class="btn-main">RELOAD</span>
+                    <span class="btn-sub">FULL REBOOT</span>
+                </div>
+            </button>
+        </div>
+
+        <div id="mobile-controls">
+            <button class="btn-m buy" onclick="MarketBridge.injectManual('A')">COMPRA (A)</button>
+            <button class="btn-m sell" onclick="MarketBridge.injectManual('B')">VENTA (B)</button>
+        </div>
     </div>
 
-    <div class="main-container">
-        <div id="col-high"></div>
-        <div id="col-mid"></div>
-        <div id="col-low"></div>
-    </div>
-
-    <div id="ai-stats">
-        <div id="ai-best-match">IA LÍDER: ---</div>
-        <div id="ai-signal-value" style="font-size:1.5rem; font-weight:bold;">---</div>
-        <div id="ai-confidence">0% ADN MATCH</div>
-        <div id="ai-next-move">PROYECCIÓN: ---</div>
-    </div>
-
-    <div id="visual-dna-track" style="display:flex; overflow-x:auto; gap:5px; padding:10px 0;"></div>
-
-    <div style="display:flex; gap:5px;">
-        <button onclick="MarketBridge.exportData()" style="flex:1; padding:10px;">REPORT</button>
-        <button onclick="MarketBridge.reset()" style="flex:1; padding:10px;">RESET</button>
-    </div>
-
-    <div id="mobile-controls">
-        <button class="btn-m buy" onclick="MarketBridge.injectManual('A')">COMPRA (A)</button>
-        <button class="btn-m sell" onclick="MarketBridge.injectManual('B')">VENTA (B)</button>
-    </div>
-
-    <script src="ui_manager.js"></script>
+    <script src="https://unpkg.com/@tensorflow/tfjs@4.22.0/dist/tf.min.js" crossorigin="anonymous"></script>
     <script src="market_bridge_core.js"></script>
+    <script src="ui_manager.js"></script>
 </body>
 </html>
