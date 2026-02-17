@@ -3,6 +3,7 @@
  * Fusión completa de todas las fases con LSTM más predictivo
  * No se eliminó ni resumió nada – solo se agregaron mejoras en ML
  * + Detector de trampas integrado basado en discusiones
+ * + Ajuste para detectar nueva semilla y reentrenar trapModel
  */
 
 const MarketBridge = {
@@ -286,6 +287,20 @@ const MarketBridge = {
                 if (this.consecutiveFails[v] >= 3) this.predictions[v] = "---";
             }
         }
+        // Nueva: chequeo para posible cambio de semilla
+        if (this.consecutiveFails[this.lastLeaderV] >= 4 || this.calculateGlobalAccuracy() < 0.55) {
+            if (typeof UIManager !== 'undefined') UIManager.addLog("¡Alerta! Posible cambio de semilla del broker", "#ff2e63");
+            this.retrainTrapModel(); // Re-entrena el detector
+        }
+    },
+
+    calculateGlobalAccuracy() {
+        let total = 0, hits = 0;
+        for (let v in this.stats) {
+            total += this.stats[v].total;
+            hits += this.stats[v].hits;
+        }
+        return total > 0 ? hits / total : 0;
     },
 
     processWealth(actualType) {
@@ -523,6 +538,46 @@ const MarketBridge = {
 
         xsTensor.dispose();
         ysTensor.dispose();
+    },
+
+    // --- Nueva: Función para reentrenar el detector ante posible cambio de semilla ---
+    async retrainTrapModel() {
+        if (!window.tf || window.traps.length < 10) return;
+        
+        // Limpia trampas viejas (más de 200 velas atrás)
+        window.traps = window.traps.filter(t => Date.now() - t.time < 200 * 60000); // solo últimas 200 velas
+        
+        // Usa las últimas secuencias + trampas nuevas como datos frescos
+        const recentSeq = window.sequence.slice(-200).map(v => v.val === 'A' ? 1 : 0);
+        const recentXs = [];
+        const recentYs = [];
+        for (let i = 0; i < recentSeq.length - this.windowSize; i++) {
+            recentXs.push(recentSeq.slice(i, i + this.windowSize));
+            recentYs.push(0); // normales recientes
+        }
+        
+        const trapXs = window.traps.map(t => t.seq.map(v => v === 'A' ? 1 : 0));
+        const trapYs = new Array(trapXs.length).fill(1);
+        
+        // Mezcla y re-entrena
+        const xs = recentXs.concat(trapXs);
+        const ys = recentYs.concat(trapYs);
+        
+        const xsTensor = tf.tensor3d(xs, [xs.length, this.windowSize, 1]);
+        const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
+        
+        if (this.trapModel) this.trapModel.dispose();
+        this.trapModel = tf.sequential();
+        this.trapModel.add(tf.layers.lstm({units: 32, inputShape: [this.windowSize, 1]}));
+        this.trapModel.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+        
+        this.trapModel.compile({optimizer: tf.train.adam(this.learningRate), loss: 'binaryCrossentropy'});
+        
+        await this.trapModel.fit(xsTensor, ysTensor, {epochs: 30, verbose: 0});
+        
+        if (typeof UIManager !== 'undefined') UIManager.addLog("TrapModel reentrenado con datos frescos – nueva semilla detectada", "#ff9f43");
+        
+        xsTensor.dispose(); ysTensor.dispose();
     },
 
     predictNext() {
