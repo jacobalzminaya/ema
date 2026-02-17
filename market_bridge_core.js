@@ -2,6 +2,7 @@
  * MARKET BRIDGE CORE - V8.1 ULTIMATE UNIFIED + LSTM MEJORADO (2026)
  * Fusión completa de todas las fases con LSTM más predictivo
  * No se eliminó ni resumió nada – solo se agregaron mejoras en ML
+ * + Detector de trampas integrado basado en discusiones
  */
 
 const MarketBridge = {
@@ -21,6 +22,7 @@ const MarketBridge = {
     currentPrice: 100.0,            
     priceHistory: [],               
     model: null,                    
+    trapModel: null, // Nueva: modelo para detectar trampas
     ssid: '42["auth",{"sessionToken":"b292b113a3933576deb3a3594fc5f3d9","uid":124499372,"lang":"en","isChart":1,"platform":2,"version":"1.0.0"}]',  // SSID alternativo de Fase 2
     lastTrainCount: 0,              
     socket: null,
@@ -39,6 +41,7 @@ const MarketBridge = {
 
     init() {
         window.sequence = window.sequence || [];
+        window.traps = window.traps || []; // Nueva: almacenamiento de secuencias de trampas
         for(let i=3; i<=20; i++) {  // Ventanas extensas V3-V20 de Fase 1/2/Principal
             this.stats[i] = { hits: 0, total: 0, timeline: [] }; 
             this.consecutiveFails[i] = 0;
@@ -266,7 +269,19 @@ const MarketBridge = {
                 this.stats[v].total++;
                 const isHit = this.predictions[v] === actualLabel;
                 if (isHit) { this.stats[v].hits++; this.consecutiveFails[v] = 0; }
-                else { this.consecutiveFails[v]++; }
+                else { 
+                    this.consecutiveFails[v]++; 
+                    // Nueva: detectar y guardar trampas
+                    const lastSeq = window.sequence.slice(-this.windowSize).map(v => v.val);
+                    const predicted = this.predictions[v];
+                    if (predicted === 'BUY' && actualLabel === 'SELL') {
+                        window.traps.push({ seq: lastSeq, type: 'fake-reversal' }); // Guarda la secuencia de trampa
+                        if (window.traps.length > 20) this.trainTrapModel(); // Re-entrena si hay suficientes
+                    } else if (predicted === 'SELL' && actualLabel === 'BUY') {
+                        window.traps.push({ seq: lastSeq, type: 'fake-reversal' });
+                        if (window.traps.length > 20) this.trainTrapModel();
+                    }
+                }
                 this.stats[v].timeline.push({ success: isHit });
                 if (this.consecutiveFails[v] >= 3) this.predictions[v] = "---";
             }
@@ -289,7 +304,7 @@ const MarketBridge = {
             if (pred === actualLabel) {
                 // --- CASO: HIT (GANAMOS) ---
                 this.equity += (this.currentStake * this.payout);
-                UIManager.addLog(`HIT +$${(this.currentStake * this.payout).toFixed(2)}`, "#00ff88");
+                UIManager.addLog(`HIT +\[ {(this.currentStake * this.payout).toFixed(2)}`, "#00ff88");
                 
                 // Reset de Martingala
                 this.currentStake = this.minBet;
@@ -297,7 +312,7 @@ const MarketBridge = {
             } else {
                 // --- CASO: MISS (PERDEMOS) ---
                 this.equity -= this.currentStake;
-                UIManager.addLog(`MISS -$${this.currentStake.toFixed(2)}`, "#ff2e63");
+                UIManager.addLog(`MISS - \]{this.currentStake.toFixed(2)}`, "#ff2e63");
 
                 // Aplicar Martingala Inteligente (Máximo 2 niveles)
                 if (this.martingaleLevel < 2) {
@@ -354,7 +369,7 @@ const MarketBridge = {
         let csv = "data:text/csv;charset=utf-8,REPORTE QUANTUM V8.0\nCapital:," + this.equity.toFixed(2) + "\n\nVENTANA,TOTAL,ACIERTOS,%\n";
         for (let v = 3; v <= 20; v++) {
             const s = this.stats[v];
-            csv += `V${v},${s.total},${s.hits},${(s.total>0?(s.hits/s.total*100):0).toFixed(2)}%\n`;
+            csv += `V\( {v}, \){s.total},\( {s.hits}, \){(s.total>0?(s.hits/s.total*100):0).toFixed(2)}%\n`;
         }
         const link = document.createElement("a");
         link.setAttribute("href", encodeURI(csv));
@@ -430,7 +445,7 @@ const MarketBridge = {
                 {
                     onEpochEnd: (epoch, logs) => {
                         if (epoch % 10 === 0 && typeof UIManager !== 'undefined') {
-                            UIManager.addLog(`Epoch ${epoch}: loss=${logs.loss?.toFixed(4) || 'N/A'}, acc=${(logs.acc*100 || 0).toFixed(1)}%`, "#8888ff");
+                            UIManager.addLog(`Epoch \( {epoch}: loss= \){logs.loss?.toFixed(4) || 'N/A'}, acc=${(logs.acc*100 || 0).toFixed(1)}%`, "#8888ff");
                         }
                     }
                 }
@@ -438,7 +453,72 @@ const MarketBridge = {
         });
 
         if (typeof UIManager !== 'undefined') {
-            UIManager.addLog(`LSTM actualizado: ${xs.length} ejemplos, window=${ws}`, "#00ff88");
+            UIManager.addLog(`LSTM actualizado: \( {xs.length} ejemplos, window= \){ws}`, "#00ff88");
+        }
+
+        xsTensor.dispose();
+        ysTensor.dispose();
+
+        // Nueva: si hay trampas, entrena el detector
+        if (window.traps.length > 20) this.trainTrapModel();
+    },
+
+    // --- Nueva: Función para entrenar el detector de trampas ---
+    async trainTrapModel() {
+        if (!window.tf) {
+            console.warn("TensorFlow.js no está cargado");
+            return;
+        }
+
+        const ws = this.windowSize;
+
+        // Preparar datos para trampas: usa secuencias normales como 0 (no trampa) y trampas como 1
+        const seq = window.sequence.map(v => v.val === 'A' ? 1 : 0);
+        const normalXs = [];
+        const normalYs = [];
+        for (let i = 0; i < seq.length - ws; i++) {
+            normalXs.push(seq.slice(i, i + ws));
+            normalYs.push(0); // 0 = no trampa
+        }
+
+        const trapXs = window.traps.map(t => t.seq.map(v => v === 'A' ? 1 : 0));
+        const trapYs = new Array(trapXs.length).fill(1); // 1 = trampa
+
+        // Concatenar normales + trampas
+        const xs = normalXs.concat(trapXs);
+        const ys = normalYs.concat(trapYs);
+
+        if (xs.length < 20) {
+            console.log('Datos insuficientes para entrenar trapModel');
+            return;
+        }
+
+        const xsTensor = tf.tensor3d(xs, [xs.length, ws, 1]);
+        const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
+
+        // Limpiar modelo anterior
+        if (this.trapModel) this.trapModel.dispose();
+
+        // Modelo simple para detección de trampas
+        this.trapModel = tf.sequential();
+        this.trapModel.add(tf.layers.lstm({units: 32, inputShape: [ws, 1]}));
+        this.trapModel.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+
+        this.trapModel.compile({
+            optimizer: tf.train.adam(this.learningRate),
+            loss: 'binaryCrossentropy',
+            metrics: ['accuracy']
+        });
+
+        await this.trapModel.fit(xsTensor, ysTensor, {
+            epochs: 50,
+            verbose: 0,
+            validationSplit: 0.2,
+            shuffle: true
+        });
+
+        if (typeof UIManager !== 'undefined') {
+            UIManager.addLog(`TrapModel actualizado: ${xs.length} ejemplos (incluyendo ${trapXs.length} trampas)`, "#ff9f43");
         }
 
         xsTensor.dispose();
@@ -460,6 +540,19 @@ const MarketBridge = {
             seq = seq.map(v => (v - min) / range);
 
             const input = tf.tensor3d([seq], [1, this.windowSize, 1]);
+
+            // Nueva: Chequea si es trampa primero
+            let isTrapProb = 0;
+            if (this.trapModel) {
+                const trapInput = tf.tensor3d([seq], [1, this.windowSize, 1]);
+                isTrapProb = this.trapModel.predict(trapInput).dataSync()[0];
+                trapInput.dispose();
+                if (isTrapProb > 0.65) {
+                    input.dispose();
+                    return `TRAMPA - NO TRADE (${(isTrapProb * 100).toFixed(0)}%)`;
+                }
+            }
+
             const prob = this.model.predict(input).dataSync()[0];
             input.dispose();
 
@@ -608,7 +701,7 @@ const MarketBridge = {
             let pred = mA > mB ? "BUY" : (mB > mA ? "SELL" : "---");
             this.predictions[v] = pred;
             const acc = this.stats[v].total > 0 ? Math.round((this.stats[v].hits / this.stats[v].total) * 100) : 0;
-            const card = `<div class="window-card" style="border-right:3px solid ${pred==="BUY"?"#00ff88":"#ff2e63"}">V${v} ${pred} (${acc}%)</div>`;
+            const card = `<div class="window-card" style="border-right:3px solid \( {pred==="BUY"?"#00ff88":"#ff2e63"}">V \){v} \( {pred} ( \){acc}%)</div>`;
             if (acc >= 75) containers.high.innerHTML += card;
             else if (acc >= 55) containers.mid.innerHTML += card;
             else if (containers.low) containers.low.innerHTML += card;
