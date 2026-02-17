@@ -2,396 +2,119 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QUANTUM MACRO | MASTER CONFLUENCE V5.5</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Macro V5.5 - Pro</title>
     <style>
-        :root { --n-green: #00ff88; --n-orange: #ff9f43; --n-red: #ff2e63; --n-blue: #00d2ff; --n-gold: #ffeb3b; }
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #020305; height: 100%; font-family: 'Courier New', monospace; color: white; }
-        
-        #layout-wrapper { display: flex; flex-direction: column; height: 100vh; }
-
-        /* SEÑAL PRINCIPAL */
-        #header-signal { background: #000; padding: 15px; border-bottom: 1px solid #222; text-align: center; transition: 0.5s; position: relative; }
-        #signal-side { font-size: 38px; font-weight: 900; transition: 0.3s; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        
-        #wealth-monitor { position: absolute; top: 10px; left: 10px; text-align: left; z-index: 10; }
-        #equity-value { font-size: 16px; font-weight: bold; color: var(--n-green); }
-        #wealth-log { font-size: 9px; height: 45px; overflow: hidden; color: #888; margin-top: 4px; border-left: 2px solid #333; padding-left: 5px; }
-
-        /* BARRA DE CONFLUENCIA */
-        #confluence-bar { margin-top: 10px; display: flex; justify-content: center; gap: 15px; align-items: center; }
-        .conf-pill { font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid #333; }
-        #v-label { font-size: 10px; color: var(--n-blue); letter-spacing: 1px; }
-        #stretch-warning { font-size: 11px; color: var(--n-gold); font-weight: bold; margin-top: 8px; height: 14px; text-transform: uppercase; }
-
-        /* IA GENETIC PREDICTOR */
-        #ai-genetic-container {
-            background: linear-gradient(90deg, rgba(0,210,255,0.1) 0%, rgba(157,80,187,0.05) 100%);
-            border: 1px solid var(--n-blue); 
-            margin: 5px 10px; padding: 12px; border-radius: 6px; 
-            display: flex; justify-content: space-between; align-items: center;
+        :root {
+            --n-green: #00ff88;
+            --n-red: #ff2e63;
+            --n-gold: #ffcc00;
+            --n-blue: #00d4ff;
+            --bg: #0a0a0a;
+            --card: #151515;
         }
-        #ai-next-move { font-size: 11px; font-weight: bold; margin-top: 5px; }
-
-        /* GRID DE VENTANAS */
-        #macro-grid {
-            flex-grow: 1; display: flex; gap: 5px; padding: 8px; overflow: hidden;
-            background: radial-gradient(circle at center, #0a1018 0%, #020305 100%);
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 10px;
+            padding-bottom: 120px; /* Espacio para botones */
         }
-        .macro-col {
-            flex: 1; display: flex; flex-direction: column; gap: 8px;
-            background: rgba(255,255,255,0.02); border-radius: 4px; padding: 8px;
-            border: 1px solid rgba(255,255,255,0.05); overflow-y: auto;
+        #header-signal {
+            text-align: center;
+            padding: 20px;
+            background: #000;
+            border-radius: 15px;
+            border: 1px solid #333;
+            margin-bottom: 10px;
         }
-        .col-label { font-size: 10px; font-weight: bold; text-align: center; padding-bottom: 5px; border-bottom: 1px solid #333; margin-bottom: 5px; }
-
-        .window-card { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; margin-bottom: 4px; }
-        .win-info { display: flex; justify-content: space-between; font-size: 11px; }
-
-        /* FOOTER Y ADN */
-        #dna-footer { background: #000; border-top: 1px solid #222; padding: 12px; }
-        #visual-dna-track { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.3); }
-
-        #bottom-controls { display: flex; gap: 8px; padding: 10px; background: #000; }
-        .cyber-btn { flex: 1; padding: 12px; background: #0a0c10; border: 1px solid #444; color: #aaa; font-size: 11px; cursor: pointer; font-weight: bold; }
-        .cyber-btn:active { background: #1a1c20; }
-
-        @keyframes pulse-warn { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        #signal-side { font-size: 2rem; margin: 0; }
+        #equity-display {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #equity-value { font-size: 1.5rem; color: var(--n-green); font-weight: bold; }
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        #ai-stats {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid var(--n-blue);
+        }
+        /* BOTONES MÓVILES FIX */
+        #mobile-controls {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(10, 10, 10, 0.9);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #333;
+        }
+        .btn-m {
+            flex: 1;
+            height: 70px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .buy { background: var(--n-green); color: black; }
+        .sell { background: var(--n-red); color: white; }
     </style>
 </head>
 <body>
-
-    <div id="layout-wrapper">
-        <div id="header-signal">
-            <div id="wealth-monitor">
-                <div id="equity-value">$1000.00</div>
-                <div id="wealth-log">SISTEMA INICIADO...</div>
-            </div>
-            <div id="signal-side" style="color: #444;">ESPERANDO ADN</div>
-            <div id="stretch-warning">ANALIZANDO LÍMITES...</div>
-            <div id="confluence-bar">
-                <div id="conf-buy" class="conf-pill" style="color: var(--n-green);">BUY: 0</div>
-                <div id="v-label">CONFLUENCIA: 0%</div>
-                <div id="conf-sell" class="conf-pill" style="color: var(--n-red);">SELL: 0</div>
-            </div>
-        </div>
-
-        <div id="ai-genetic-container">
-            <div>
-                <div style="font-size: 9px; color: var(--n-blue); font-weight: bold;">IA GENETIC PREDICTOR</div>
-                <div id="ai-best-match" style="font-size: 12px; color: #fff; margin-top: 2px;">BUSCANDO PATRÓN LÍDER...</div>
-                <div id="ai-next-move">PROYECCIÓN: ---</div>
-            </div>
-            <div style="text-align: right;">
-                <div id="ai-signal-value" style="font-size: 22px; font-weight: 900; color: #444;">WAIT</div>
-                <div id="ai-confidence" style="font-size: 9px; color: #666;">0% MATCH</div>
-            </div>
-        </div>
-
-        <div id="macro-grid">
-            <div class="macro-col">
-                <div class="col-label" style="color: #888;">BASE (50-65%)</div>
-                <div id="col-low"></div>
-            </div>
-            <div class="macro-col">
-                <div class="col-label" style="color: var(--n-green);">FUERTE (66-84%)</div>
-                <div id="col-mid"></div>
-            </div>
-            <div class="macro-col">
-                <div class="col-label" style="color: var(--n-orange);">ELITE (85-100%)</div>
-                <div id="col-high"></div>
-            </div>
-        </div>
-
-        <div id="dna-footer">
-            <div id="visual-dna-track"></div>
-        </div>
-
-<div id="bottom-controls">
-    <button onclick="MarketBridge.reset();" class="cyber-btn">RESET ADN</button>
-    <button onclick="MarketBridge.exportData();" class="cyber-btn" style="border-color: var(--n-blue); color: var(--n-blue);">EXPORTAR EXCEL</button>
-    <button onclick="location.reload()" class="cyber-btn" style="border-color: var(--n-red); color: var(--n-red);">RELOAD</button>
-</div>
+    <div id="header-signal">
+        <h1 id="signal-side">ESPERANDO ADN</h1>
+        <div id="v-label">CONFLUENCIA: 0%</div>
+    </div>
+    
+    <div id="stretch-warning" style="text-align:center; padding:10px; font-weight:bold;">FLUJO: ESTABLE</div>
+    
+    <div id="equity-display">
+        <span id="equity-value">$1000.00</span>
+        <div id="wealth-log" style="font-size:0.8rem; color:#888; height:40px; overflow:hidden;"></div>
     </div>
 
-    <script>
+    <div class="main-container">
+        <div id="col-high"></div>
+        <div id="col-mid"></div>
+        <div id="col-low"></div>
+    </div>
 
-    const MarketBridge = {
-        predictions: {}, 
-        stats: {},
-        lastLeaderV: null,
-        isLocked: false,
-        equity: 1000.00,
-        minBet: 10,
-        payout: 0.85,
+    <div id="ai-stats">
+        <div id="ai-best-match">IA LÍDER: ---</div>
+        <div id="ai-signal-value" style="font-size:1.5rem; font-weight:bold;">---</div>
+        <div id="ai-confidence">0% ADN MATCH</div>
+        <div id="ai-next-move">PROYECCIÓN: ---</div>
+    </div>
 
-        init() {
-            window.sequence = window.sequence || [];
-            for(let i=3; i<=12; i++) {
-                this.stats[i] = { hits: 0, total: 0, timeline: [] }; 
-            }
-            this.setupInput();
-            this.updateWealthUI();
-        },
+    <div id="visual-dna-track" style="display:flex; overflow-x:auto; gap:5px; padding:10px 0;"></div>
 
-        setupInput() {
-            document.addEventListener('mousedown', (e) => {
-                if (e.target.tagName === 'BUTTON') return;
-                const side = (e.button === 0) ? 'A' : (e.button === 2 ? 'B' : null);
-                if (side) this.injectManual(side);
-            });
-            document.addEventListener('contextmenu', e => e.preventDefault());
-        },
+    <div style="display:flex; gap:5px;">
+        <button onclick="MarketBridge.exportData()" style="flex:1; padding:10px;">REPORT</button>
+        <button onclick="MarketBridge.reset()" style="flex:1; padding:10px;">RESET</button>
+    </div>
 
-        injectManual(type) {
-            this.processWealth(type);
-            this.verifyAccuracy(type);
-            window.sequence.push({ val: type, time: Date.now() });
-            
-            this.updateVisualTrack();
-            this.runMultiAnalysis();
-            
-            const vol = this.calculateVolatility();
-            if (vol >= 8 && !this.isLocked) this.activateSecurityLock();
+    <div id="mobile-controls">
+        <button class="btn-m buy" onclick="MarketBridge.injectManual('A')">COMPRA (A)</button>
+        <button class="btn-m sell" onclick="MarketBridge.injectManual('B')">VENTA (B)</button>
+    </div>
 
-            this.checkExtremeLimits();
-            this.updateMainSignal(); 
-            this.findGeneticMatch();
-        },
-
-        checkExtremeLimits() {
-            if (window.sequence.length < 10) return;
-            const history = window.sequence.map(v => v.val).join('');
-            const last10 = history.slice(-10);
-            const countA = (last10.match(/A/g) || []).length;
-            const countB = (last10.match(/B/g) || []).length;
-            const stretch = document.getElementById('stretch-warning');
-            
-            if (countA >= 8) {
-                stretch.innerHTML = `<span style="animation: pulse-warn 0.4s infinite; color: var(--n-red);">⚠️ TECHO ALCANZADO - BUSCAR SELL</span>`;
-            } else if (countB >= 8) {
-                stretch.innerHTML = `<span style="animation: pulse-warn 0.4s infinite; color: var(--n-green);">⚠️ SUELO ALCANZADO - BUSCAR BUY</span>`;
-            } else {
-                this.checkPriceStretch();
-            }
-        },
-
-        checkPriceStretch() {
-            const lastData = window.sequence.slice(-6).map(v => v.val);
-            if (lastData.length < 3) return;
-            let count = 1;
-            const lastVal = lastData[lastData.length - 1];
-            for (let i = lastData.length - 2; i >= 0; i--) {
-                if (lastData[i] === lastVal) count++;
-                else break;
-            }
-            const stretch = document.getElementById('stretch-warning');
-            if (count >= 3) {
-                stretch.innerHTML = `⚠️ REVERSIÓN PROBABLE V${count}`;
-                stretch.style.color = "var(--n-gold)";
-            } else {
-                stretch.innerHTML = "FLUJO DE PRECIO: ESTABLE";
-                stretch.style.color = "#666";
-            }
-        },
-
-        processWealth(actualType) {
-            const actualLabel = actualType === 'A' ? 'BUY' : 'SELL';
-            if (this.lastLeaderV && this.predictions[this.lastLeaderV] && this.predictions[this.lastLeaderV] !== "---") {
-                const pred = this.predictions[this.lastLeaderV];
-                if (pred === actualLabel) {
-                    const win = this.minBet * this.payout;
-                    this.equity += win;
-                    this.addLog(`+$${win.toFixed(2)}`, "#00ff88");
-                } else {
-                    this.equity -= this.minBet;
-                    this.addLog(`-$${this.minBet.toFixed(2)}`, "#ff2e63");
-                }
-                this.updateWealthUI();
-            }
-        },
-
-        updateWealthUI() {
-            const eq = document.getElementById('equity-value');
-            if (eq) {
-                eq.innerText = `$${this.equity.toFixed(2)}`;
-                eq.style.color = this.equity >= 1000 ? "var(--n-green)" : "var(--n-gold)";
-            }
-        },
-
-        addLog(msg, color) {
-            const log = document.getElementById('wealth-log');
-            if (log) {
-                const d = new Date();
-                const timestamp = d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0') + ":" + d.getSeconds().toString().padStart(2,'0');
-                log.innerHTML = `<div style="color:${color}">${timestamp} -> ${msg}</div>` + log.innerHTML;
-            }
-        },
-
-        verifyAccuracy(actualType) {
-            const actualLabel = actualType === 'A' ? 'BUY' : 'SELL';
-            for (let v in this.predictions) {
-                if (this.predictions[v] !== "---") {
-                    this.stats[v].total++;
-                    const isHit = this.predictions[v] === actualLabel;
-                    if (isHit) this.stats[v].hits++;
-                    this.stats[v].timeline.push({ success: isHit, prediction: this.predictions[v] });
-                }
-            }
-        },
-
-        calculateVolatility() {
-            if (window.sequence.length < 10) return 0;
-            const last10 = window.sequence.slice(-10);
-            let changes = 0;
-            for (let i = 1; i < last10.length; i++) {
-                if (last10[i].val !== last10[i-1].val) changes++;
-            }
-            return changes;
-        },
-
-        findGeneticMatch() {
-            if (this.isLocked) return;
-            let bestV = null; let maxWeight = -1;
-            const history = window.sequence.map(v => v.val).join('');
-            for (let v = 3; v <= 12; v++) {
-                if (window.sequence.length < v) continue;
-                const pattern = history.slice(-v);
-                const searchPool = history.slice(0, -1);
-                const occurrences = (searchPool.match(new RegExp(pattern, 'g')) || []).length;
-                const recentHits = this.stats[v].timeline.slice(-5).filter(s => s.success).length;
-                const weight = (occurrences * 0.4) + (recentHits * 0.6);
-                if (weight > maxWeight && this.predictions[v] !== "---") {
-                    maxWeight = weight; bestV = v;
-                }
-            }
-            if (bestV) {
-                this.lastLeaderV = bestV;
-                const pred = this.predictions[bestV];
-                const acc = Math.round((this.stats[bestV].hits / this.stats[bestV].total) * 100) || 0;
-                document.getElementById('ai-best-match').innerHTML = `IA LÍDER: <b style="color:var(--n-blue)">V${bestV}</b>`;
-                document.getElementById('ai-signal-value').innerText = pred;
-                document.getElementById('ai-signal-value').style.color = pred === "BUY" ? "var(--n-green)" : "var(--n-red)";
-                document.getElementById('ai-confidence').innerText = `${acc}% ADN MATCH`;
-                const currentPattern = history.slice(-bestV);
-                const mA = (history.match(new RegExp(currentPattern + 'A', 'g')) || []).length;
-                const mB = (history.match(new RegExp(currentPattern + 'B', 'g')) || []).length;
-                const next = document.getElementById('ai-next-move');
-                if (next) {
-                    const dir = mA > mB ? "ALCISTA" : (mB > mA ? "BAJISTA" : "LATERAL");
-                    next.innerText = `PROYECCIÓN: ${dir}`;
-                    next.style.color = dir === "ALCISTA" ? "var(--n-green)" : "var(--n-red)";
-                }
-            }
-        },
-
-        runMultiAnalysis() {
-            const containers = { low: document.getElementById('col-low'), mid: document.getElementById('col-mid'), high: document.getElementById('col-high') };
-            Object.values(containers).forEach(c => { if(c) c.innerHTML = ''; });
-            const history = window.sequence.map(v => v.val).join('');
-            for (let v = 3; v <= 12; v++) {
-                if (window.sequence.length < v) continue;
-                const pattern = history.slice(-v);
-                const searchPool = history.slice(0, -1);
-                const matchA = (searchPool.match(new RegExp(pattern + 'A', 'g')) || []).length;
-                const matchB = (searchPool.match(new RegExp(pattern + 'B', 'g')) || []).length;
-                let pred = matchA > matchB ? "BUY" : (matchB > matchA ? "SELL" : "---");
-                this.predictions[v] = pred;
-                const acc = this.stats[v].total > 0 ? Math.round((this.stats[v].hits / this.stats[v].total) * 100) : 0;
-                const cardHtml = `<div class="window-card" style="border-right: 3px solid ${pred==="BUY"?"var(--n-green)":"var(--n-red)"}">
-                    <div class="win-info"><span>V${v} <b>${pred}</b></span><span>${acc}%</span></div>
-                </div>`;
-                if (acc >= 85 && containers.high) containers.high.innerHTML += cardHtml;
-                else if (acc >= 66 && containers.mid) containers.mid.innerHTML += cardHtml;
-                else if (containers.low) containers.low.innerHTML += cardHtml;
-            }
-        },
-
-        updateVisualTrack() {
-            const track = document.getElementById('visual-dna-track');
-            if (track) {
-                track.innerHTML = window.sequence.slice(-40).map(v => 
-                    `<div class="dot" style="background:${v.val==='A'?'var(--n-green)':'var(--n-red)'};"></div>`
-                ).join('');
-            }
-        },
-
-        updateMainSignal() {
-            if (this.isLocked) return;
-            let cB = 0; let cS = 0;
-            for(let v=3; v<=12; v++) {
-                if(this.predictions[v] === "BUY") cB++;
-                if(this.predictions[v] === "SELL") cS++;
-            }
-            const side = document.getElementById('signal-side');
-            const header = document.getElementById('header-signal');
-            if (cB >= 8) {
-                side.innerText = "MASTER BUY";
-                side.style.color = "var(--n-green)";
-                header.style.background = "rgba(0, 255, 136, 0.15)";
-            } else if (cS >= 8) {
-                side.innerText = "MASTER SELL";
-                side.style.color = "var(--n-red)";
-                header.style.background = "rgba(255, 46, 99, 0.15)";
-            } else {
-                const p = this.predictions[this.lastLeaderV] || "ESPERANDO ADN";
-                side.innerText = p;
-                side.style.color = p === "BUY" ? "var(--n-green)" : (p === "SELL" ? "var(--n-red)" : "#444");
-                header.style.background = "#000";
-            }
-            document.getElementById('conf-buy').innerText = `BUY: ${cB}`;
-            document.getElementById('conf-sell').innerText = `SELL: ${cS}`;
-            const maxC = Math.max(cB, cS);
-            document.getElementById('v-label').innerText = `CONFLUENCIA: ${(maxC/10*100)}%`;
-        },
-
-        activateSecurityLock() {
-            this.isLocked = true;
-            const s = document.getElementById('signal-side');
-            if(s) s.innerText = "VOLATILIDAD";
-            s.style.color = "var(--n-gold)";
-            setTimeout(() => { this.isLocked = false; this.updateMainSignal(); }, 20000);
-        },
-
-        reset() {
-            window.sequence = [];
-            this.equity = 1000;
-            this.updateWealthUI();
-            this.runMultiAnalysis();
-            document.getElementById('wealth-log').innerHTML = "DATOS REINICIADOS.";
-            document.getElementById('signal-side').innerText = "ESPERANDO ADN";
-            document.getElementById('header-signal').style.background = "#000";
-        },
-
-        // FUNCIÓN DE EXPORTACIÓN INTEGRADA
-        exportData() {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "REPORTE QUANTUM MACRO V5.5\n";
-            csvContent += "Capital Final:," + this.equity.toFixed(2) + "\n";
-            csvContent += "V-Lider Actual:," + (this.lastLeaderV || "N/A") + "\n\n";
-            csvContent += "VENTANA,TOTAL OPS,ACIERTOS,PRECISION %\n";
-            for(let v=3; v<=12; v++) {
-                const stats = this.stats[v];
-                const acc = stats.total > 0 ? ((stats.hits/stats.total)*100).toFixed(2) : 0;
-                csvContent += `V${v},${stats.total},${stats.hits},${acc}%\n`;
-            }
-            csvContent += "\nORDEN,MOVIMIENTO,ESTADO EQUITY\n";
-            window.sequence.forEach((data, index) => {
-                const type = data.val === 'A' ? "BUY" : "SELL";
-                csvContent += `${index+1},${type},REGISTRADO\n`;
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "Reporte_Quantum.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    };
-
-    MarketBridge.init();
-</script>
+    <script src="ui_manager.js"></script>
+    <script src="market_bridge_core.js"></script>
 </body>
 </html>
