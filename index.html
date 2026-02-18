@@ -11,229 +11,368 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
-    <style>
-        html, body {
-            touch-action: manipulation;
-            -webkit-user-select: none;
-            user-select: none;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            margin: 0; padding: 0;
-            background: #020305;
-            font-family: 'Inter', -apple-system, 'Courier New', monospace;
-            color: white;
-        }
+<style>
+    * {
+        box-sizing: border-box;
+    }
 
-        #layout-wrapper {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            padding-bottom: 160px;
-            box-sizing: border-box;
-        }
+    html, body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        background: #020305;
+        font-family: 'Inter', -apple-system, 'Courier New', monospace;
+        color: white;
+        overflow-x: hidden;
+        touch-action: manipulation;           /* evita zoom y comportamientos raros al tocar repetido */
+        -webkit-tap-highlight-color: transparent; /* quita resaltado azul al tocar */
+    }
 
-        #header-signal {
-            background: #000;
-            padding: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-            position: relative;
-        }
+    #layout-wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        padding-bottom: 52vh; /* espacio grande para los botones grandes abajo */
+        box-sizing: border-box;
+    }
 
-        #signal-side {
-            font-size: 36px;
-            font-weight: 900;
-            margin: 0;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px rgba(255,255,255,0.15);
-        }
+    #header-signal {
+        background: #000;
+        padding: 15px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        text-align: center;
+        position: relative;
+    }
 
-        #wealth-monitor {
-            position: absolute;
-            top: 10px; left: 15px;
-        }
+    #signal-side {
+        font-size: 36px;
+        font-weight: 900;
+        margin: 0;
+        text-transform: uppercase;
+        text-shadow: 0 0 20px rgba(255,255,255,0.15);
+    }
 
-        #equity-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #00ff88;
-        }
+    #wealth-monitor {
+        position: absolute;
+        top: 10px; left: 15px;
+    }
 
-        #wealth-log {
-            font-size: 10px;
-            color: #666;
-            margin-top: 4px;
-        }
+    #equity-value {
+        font-size: 20px;
+        font-weight: bold;
+        color: #00ff88;
+    }
 
-        /* NUEVO PANEL: SECUENCIA EN VIVO (CORES INSERTADOS) */
-        #sequence-live-panel {
-            background: rgba(10, 10, 20, 0.9);
-            border: 1px solid #444;
-            border-radius: 8px;
-            margin: 8px 10px;
-            padding: 12px;
-            max-height: 80px;
-            overflow-x: auto;
-            white-space: nowrap;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            letter-spacing: 2px;
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.15);
-        }
+    #wealth-log {
+        font-size: 10px;
+        color: #666;
+        margin-top: 4px;
+    }
 
-        .seq-a { color: #00ff88; }
-        .seq-b { color: #ff2e63; }
-        #seq-length { font-size: 12px; color: #888; margin-top: 6px; }
+    /* Panel de velas */
+    #sequence-live-panel {
+        background: rgba(10, 10, 20, 0.92);
+        border: 1px solid #444;
+        border-radius: 10px;
+        margin: 10px 12px;
+        padding: 12px 10px;
+        max-height: 90px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        scrollbar-width: thin;
+        scrollbar-color: #555 #222;
+    }
 
-        #ai-genetic-container {
-            background: linear-gradient(90deg, rgba(0,210,255,0.12) 0%, rgba(157,80,187,0.06) 100%);
-            border: 1px solid #00d2ff;
-            margin: 10px;
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(5px);
-        }
+    .velas-container {
+        display: inline-flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 100%;
+    }
 
-        #confluence-bar {
-            margin: 5px 0;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-        }
+    .vela {
+        width: 12px;
+        min-width: 12px;
+        border-radius: 3px 3px 0 0;
+        transition: height 0.18s ease;
+    }
 
-        .conf-pill {
-            font-size: 12px;
-            font-weight: bold;
-            padding: 6px 12px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+    .vela-compra { background: #00ff9d; box-shadow: 0 2px 8px #00ff9daa; }
+    .vela-venta  { background: #ff3366; box-shadow: 0 2px 8px #ff3366aa; }
 
-        #macro-grid {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            padding: 10px;
-            overflow-y: auto;
-        }
+    .vela.ultima { height: 38px !important; }
+    .vela:not(.ultima) { height: 24px; }
 
-        .macro-col {
-            background: rgba(255,255,255,0.02);
-            border-radius: 6px;
-            padding: 10px;
-            border: 1px solid rgba(255,255,255,0.08);
-        }
+    #seq-length {
+        font-size: 12px;
+        color: #888;
+        margin-top: 8px;
+        text-align: right;
+    }
 
-        .col-label {
-            font-size: 11px;
-            font-weight: bold;
-            text-align: center;
-            color: #00d2ff;
-            border-bottom: 1px solid #333;
-            padding-bottom: 6px;
-            margin-bottom: 6px;
-        }
+    /* Fila horizontal de paneles */
+    .info-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px;
+        margin: 8px 10px;
+    }
 
-        .window-card {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.08);
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
+    .info-panel.compact {
+        padding: 10px 12px;
+        font-size: 12.5px;
+        min-height: 110px;
+        display: flex;
+        flex-direction: column;
+    }
 
-        .info-panel {
-            background: rgba(26,26,26,0.85);
-            border-radius: 8px;
-            padding: 12px;
-            margin: 8px 10px;
-            border: 1px solid #444;
-            backdrop-filter: blur(8px);
-            font-size: 13px;
-        }
+    .info-panel.compact h4,
+    .info-panel.compact strong {
+        font-size: 13.5px;
+        margin: 0 0 8px 0;
+    }
 
-        .info-panel h4 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            font-weight: bold;
-        }
+    .info-panel.compact div {
+        line-height: 1.45;
+        margin-bottom: 3px;
+    }
 
-        #trap-panel { border-color: #ff9f43; }
-        #trap-panel h4 { color: #ff9f43; }
+    #log-panel.compact {
+        max-height: 140px;
+        overflow-y: auto;
+    }
 
-        #stats-panel { border-color: #00ff88; }
-        #stats-panel h4 { color: #00ff88; }
+    #ai-genetic-container {
+        background: linear-gradient(90deg, rgba(0,210,255,0.12) 0%, rgba(157,80,187,0.06) 100%);
+        border: 1px solid #00d2ff;
+        margin: 10px;
+        padding: 12px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(5px);
+    }
 
-        #log-panel {
-            max-height: 140px;
-            overflow-y: auto;
-            font-size: 11px;
-            color: #aaa;
-            border-color: #555;
-        }
+    #confluence-bar {
+        margin: 5px 0;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
 
-        .alert { color: #ff2e63; font-weight: bold; }
+    .conf-pill {
+        font-size: 12px;
+        font-weight: bold;
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
 
-        #accuracy-chart-container {
-            height: 160px;
-            margin: 10px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            padding: 10px;
-        }
+    #macro-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 10px 12px;
+    }
 
+    .macro-col {
+        background: rgba(255,255,255,0.02);
+        border-radius: 6px;
+        padding: 10px;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .col-label {
+        font-size: 11px;
+        font-weight: bold;
+        text-align: center;
+        color: #00d2ff;
+        border-bottom: 1px solid #333;
+        padding-bottom: 6px;
+        margin-bottom: 6px;
+    }
+
+    .window-card {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    #accuracy-chart-container {
+        height: 160px;
+        margin: 10px 12px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    /* BOTONES GRANDES FIJOS ABAJO - MITAD DE PANTALLA CADA UNO */
+    #mobile-controls {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50vh;
+        display: flex;
+        z-index: 9999;
+        background: rgba(0,0,0,0.3);
+        backdrop-filter: blur(4px);
+        border-top: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .btn-m {
+        flex: 1;
+        height: 100%;
+        border: none;
+        font-weight: 900;
+        font-size: 38px;
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: all 0.12s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-m:active {
+        transform: scale(0.96);
+        opacity: 0.92;
+    }
+
+    .buy {
+        background: #00ff88;
+        color: #000;
+    }
+
+    .sell {
+        background: #ff2e63;
+        color: #fff;
+    }
+
+    /* ==============================================
+       CONTROLES INFERIORES - #bottom-controls
+       ============================================== */
+
+    #bottom-controls {
+        background: linear-gradient(180deg, #0a0a12 0%, #000 100%);
+        border-top: 1px solid rgba(100, 100, 140, 0.25);
+        padding: 16px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.7);
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        backdrop-filter: blur(10px);
+    }
+
+    /* Tarjeta individual (cada botón de control) */
+    .control-card {
+        flex: 1 1 110px;
+        max-width: 180px;
+        min-width: 90px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 10px;
+        background: rgba(25, 25, 40, 0.75);
+        border: 1px solid rgba(90, 90, 130, 0.35);
+        border-radius: 12px;
+        color: #e0e0ff;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(6px);
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .control-card:hover {
+        background: rgba(40, 40, 70, 0.9);
+        border-color: rgba(120, 120, 160, 0.6);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+
+    .control-card:active {
+        transform: translateY(1px);
+        opacity: 0.88;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* Íconos más grandes y con color según botón */
+    .control-card span:first-child {
+        font-size: 26px;
+        margin-bottom: 2px;
+        transition: transform 0.15s ease;
+    }
+
+    .control-card:hover span:first-child {
+        transform: scale(1.15);
+    }
+
+    /* Colores específicos por tipo de botón */
+    .control-card.reset span:first-child       { color: #4a90e2; }
+    .control-card.export span:first-child      { color: #00d4ff; }
+    .control-card.connect span:first-child     { color: #00ff88; }
+    .control-card[style*="ff9f43"] span:first-child { color: #ff9f43; }
+    .control-card.reload span:first-child      { color: #ff9500; }
+
+    /* Responsive - en pantallas pequeñas */
+    @media (max-width: 480px) {
         #bottom-controls {
-            background: linear-gradient(to top, #000, #050505);
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding: 12px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            padding: 12px 8px;
+            gap: 8px;
         }
 
         .control-card {
-            flex: 1;
-            min-width: 100px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
+            flex: 1 1 80px;
+            font-size: 12px;
+            padding: 10px 6px;
         }
 
-        .control-card:hover {
-            background: rgba(255,255,255,0.08);
+        .control-card span:first-child {
+            font-size: 24px;
         }
+    }
 
-        .btn-m {
-            flex: 1;
-            height: 60px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 900;
-            font-size: 16px;
-            cursor: pointer;
+    @media (min-width: 769px) {
+        #mobile-controls {
+            height: 120px; /* más pequeño en escritorio */
+            font-size: 28px;
         }
-
-        .buy { background: #00ff88; color: #000; }
-        .sell { background: #ff2e63; color: #fff; }
-
-        @media (max-width: 768px) {
-            #macro-grid { grid-template-columns: 1fr; }
-            #bottom-controls { flex-direction: column; }
+        #layout-wrapper {
+            padding-bottom: 140px;
         }
-    </style>
+    }
+
+    @media (max-width: 768px) {
+        .info-row {
+            grid-template-columns: 1fr;
+        }
+        #macro-grid {
+            grid-template-columns: 1fr;
+        }
+        .vela {
+            width: 10px;
+            min-width: 10px;
+        }
+    }
+</style>
 </head>
 <body>
 
@@ -252,31 +391,36 @@
             </div>
         </div>
 
-        <!-- NUEVO: Panel para ver los cores/secuencia en vivo -->
         <div id="sequence-live-panel">
-            <strong>SECUENCIA EN VIVO (CORES INSERTADOS)</strong><br>
-            <div id="live-sequence">---</div>
+            <strong>ÚLTIMAS VELAS (lo que estás poniendo)</strong>
+            <div id="live-sequence">
+                <div class="velas-container"></div>
+            </div>
             <div id="seq-length">Longitud actual: 0 velas</div>
         </div>
 
-        <!-- Panel Anti-Trampa -->
-        <div id="trap-panel" class="info-panel">
-            <h4>ANTI-TRAMPA STATUS</h4>
-            <div>Trampas detectadas: <span id="trap-count">0</span></div>
-            <div>Prob. trampa actual: <span id="trap-prob">0%</span></div>
-            <div>Última trampa: <span id="last-trap">---</span></div>
-            <div>Trampas evitadas hoy: <span id="traps-avoided">0</span></div>
+        <div class="info-row">
+            <div id="trap-panel" class="info-panel compact">
+                <h4>ANTI-TRAMPA STATUS</h4>
+                <div>Trampas detectadas: <span id="trap-count">0</span></div>
+                <div>Prob. trampa actual: <span id="trap-prob">0%</span></div>
+                <div>Última trampa: <span id="last-trap">---</span></div>
+                <div>Trampas evitadas hoy: <span id="traps-avoided">0</span></div>
+            </div>
+
+            <div id="stats-panel" class="info-panel compact">
+                <h4>ESTADÍSTICAS RÁPIDAS</h4>
+                <div>Acierto global: <span id="global-acc">0.0%</span></div>
+                <div>Trades totales: <span id="total-trades">0</span></div>
+                <div>Ganados / Perdidos: <span id="wins">0</span> / <span id="losses">0</span></div>
+            </div>
+
+            <div id="log-panel" class="info-panel compact">
+                <strong>ÚLTIMOS LOGS:</strong>
+                <div id="log-lines"></div>
+            </div>
         </div>
 
-        <!-- Estadísticas rápidas -->
-        <div id="stats-panel" class="info-panel">
-            <h4>ESTADÍSTICAS RÁPIDAS</h4>
-            <div>Acierto global: <span id="global-acc">0.0%</span></div>
-            <div>Trades totales: <span id="total-trades">0</span></div>
-            <div>Ganados / Perdidos: <span id="wins">0</span> / <span id="losses">0</span></div>
-        </div>
-
-        <!-- Gráfico de acierto -->
         <div id="accuracy-chart-container">
             <canvas id="accuracy-chart"></canvas>
         </div>
@@ -306,14 +450,7 @@
                 <div id="col-high"></div>
             </div>
         </div>
-
-        <!-- Logs visibles -->
-        <div id="log-panel" class="info-panel">
-            <strong>ÚLTIMOS LOGS:</strong><br>
-            <div id="log-lines"></div>
-        </div>
-
-        <div id="bottom-controls">
+    <div id="bottom-controls">
             <button onclick="MarketBridge.reset();" class="control-card reset">
                 <span>🔄</span> RESET ADN
             </button>
@@ -330,7 +467,7 @@
                 <span>⚡</span> RELOAD
             </button>
         </div>
-
+        <!-- BOTONES GRANDES FIJOS ABAJO - CADA UNO MITAD DE PANTALLA -->
         <div id="mobile-controls">
             <button class="btn-m buy" onclick="MarketBridge.injectManual('A')">COMPRA (A)</button>
             <button class="btn-m sell" onclick="MarketBridge.injectManual('B')">VENTA (B)</button>
@@ -341,7 +478,6 @@
     <script src="market_bridge_core.js"></script>
     <script src="ui_manager.js"></script>
 
-    <!-- Script para gráfico, logs y actualización de secuencia en vivo -->
     <script>
         let accChart;
         let accHistory = [];
@@ -389,21 +525,34 @@
             accChart.update();
         }
 
-        // Actualizar secuencia en vivo (cores insertados)
         function updateLiveSequence() {
-            if (!window.sequence || !document.getElementById('live-sequence')) return;
+            const container = document.getElementById('live-sequence');
+            if (!container || !window.sequence) return;
 
-            const seqDisplay = window.sequence.slice(-40).map(item => {
-                return item.val === 'A' 
-                    ? `<span class="seq-a">A</span>` 
-                    : `<span class="seq-b">B</span>`;
-            }).join(' ');
+            container.innerHTML = '';
 
-            document.getElementById('live-sequence').innerHTML = seqDisplay || '---';
-            document.getElementById('seq-length').innerText = `Longitud actual: ${window.sequence.length} velas`;
+            const fragment = document.createDocumentFragment();
+            const ultimas = window.sequence.slice(-60);
+
+            ultimas.forEach((item, index) => {
+                const vela = document.createElement('div');
+                vela.className = `vela vela-${item.val === 'A' ? 'compra' : 'venta'}`;
+                if (index === ultimas.length - 1) vela.classList.add('ultima');
+                fragment.appendChild(vela);
+            });
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'velas-container';
+            wrapper.appendChild(fragment);
+
+            container.appendChild(wrapper);
+
+            document.getElementById('seq-length').textContent = 
+                `Longitud actual: ${window.sequence.length} velas`;
+
+            container.scrollLeft = container.scrollWidth;
         }
 
-        // Funciones de actualización de paneles (llamadas desde market_bridge_core.js)
         function updateTrapPanel(trapsCount, currentProb, lastTrapSeq, avoided) {
             document.getElementById('trap-count').innerText = trapsCount;
             document.getElementById('trap-prob').innerText = currentProb;
@@ -421,7 +570,7 @@
         function addLog(msg, color = '#aaa') {
             const logContainer = document.getElementById('log-lines');
             const line = document.createElement('div');
-            line.innerHTML = `<span style="color:\( {color}">[ \){new Date().toLocaleTimeString()}] ${msg}</span>`;
+            line.innerHTML = `<span style="color:${color}">[${new Date().toLocaleTimeString()}] ${msg}</span>`;
             logContainer.appendChild(line);
             if (logContainer.children.length > 10) {
                 logContainer.removeChild(logContainer.firstChild);
@@ -429,15 +578,20 @@
             logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        // Inicializar al cargar
         window.addEventListener('load', () => {
             initChart();
             addLog("Sistema iniciado – esperando datos...", "#00ff88");
-            updateLiveSequence(); // Inicial
+            updateLiveSequence();
         });
 
-        // Actualizar secuencia después de cada injectManual (se llama desde JS principal)
-        // Puedes llamar updateLiveSequence() desde market_bridge_core.js después de push a sequence
+        // Actualización inmediata después de cada inyección manual
+        if (window.MarketBridge) {
+            const originalInject = MarketBridge.injectManual;
+            MarketBridge.injectManual = function(type) {
+                originalInject.apply(this, arguments);
+                setTimeout(updateLiveSequence, 0);
+            };
+        }
     </script>
 </body>
 </html>
